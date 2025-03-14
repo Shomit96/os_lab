@@ -1,0 +1,17 @@
+def calculate_seek_distance(requests, start_head=50):
+    total_distance = 0
+    current_position = start_head
+
+    # Iterate through the request sequence and calculate the seek distance
+    for target in requests:
+        total_distance += abs(target - current_position)
+        current_position = target
+
+    # Print the total seek operations
+    print(f"Total seek operations: {total_distance}")
+    return total_distance
+
+
+if __name__ == "__main__":
+    request_sequence = [176, 79, 34, 60, 92, 11, 41, 114]
+    calculate_seek_distance(request_sequence, start_head=50)
