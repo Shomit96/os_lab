@@ -1,0 +1,115 @@
+from tabulate import tabulate
+
+
+# Define a function to select the highest priority process that is ready to execute
+def select_process(process_list, remaining_bt, t):
+    available_processes = [
+        p for p in process_list if p[1] <= t and remaining_bt.get(p[3], 0) > 0
+    ]
+    if not available_processes:
+        return None
+    available_processes.sort(key=lambda x: -x[0])  # Higher priority first
+    return available_processes[0]
+
+
+# Function to calculate and update the process information (Completion, Turnaround, and Waiting times)
+def calculate_times(process, t, remaining_bt, final_list):
+    process_id = process[3]
+    arrival_time = process[1]
+    burst_time = process[2]
+
+    completion_time = t
+    turnaround_time = completion_time - arrival_time
+    waiting_time = turnaround_time - burst_time
+
+    final_list[process_id] = [
+        arrival_time,
+        burst_time,
+        completion_time,
+        turnaround_time,
+        waiting_time,
+    ]
+
+
+# Preemptive Priority Scheduling Algorithm
+def priority_scheduling_preemptive(process_list, time_quantum=1):
+    # Sort the processes based on arrival time first and priority second
+    process_list.sort(key=lambda x: (x[1], -x[0]))
+
+    t = 0  # Current time
+    gantt = []  # Gantt chart to visualize process execution order
+    final_list = {}  # Store completion details for each process
+    remaining_bt = {
+        p[3]: p[2] for p in process_list
+    }  # Remaining burst time for each process
+    first_execution = {}  # Track the first time a process starts executing
+
+    # Track when all processes have arrived
+    all_processes_arrived = False
+
+    while remaining_bt:
+        process = select_process(process_list, remaining_bt, t)
+
+        if process:
+            priority, arrival_time, burst_time, process_id = process
+
+            # Record first execution time
+            if process_id not in first_execution:
+                first_execution[process_id] = t
+
+            # Add process to the Gantt chart
+            gantt.append(process_id)
+
+            # Determine execution time (either time quantum or remaining burst time)
+            execution_time = min(time_quantum, remaining_bt[process_id])
+            t += execution_time
+            remaining_bt[process_id] -= execution_time
+
+            # If process is complete, calculate its final times
+            if remaining_bt[process_id] == 0:
+                calculate_times(process, t, remaining_bt, final_list)
+                del remaining_bt[process_id]  # Remove process from remaining burst time
+
+        else:
+            # If no process is available, idle time occurs
+            gantt.append("Idle")
+            t += time_quantum
+
+        # Once all processes have arrived, continue executing the remaining processes
+        if not all_processes_arrived and all(p[1] <= t for p in process_list):
+            all_processes_arrived = True
+
+    # Calculate response times (when the process first executes minus its arrival time)
+    response_times = {
+        p_id: first_execution.get(p_id, final_list[p_id][0]) - final_list[p_id][0]
+        for p_id in final_list
+    }
+
+    # Prepare data for displaying the table
+    headers = [
+        "Process ID",
+        "Arrival Time",
+        "Burst Time",
+        "Completion Time",
+        "Turnaround Time",
+        "Waiting Time",
+        "Response Time",
+    ]
+
+    table_data = [
+        [p_id, *final_list[p_id], response_times[p_id]] for p_id in final_list
+    ]
+
+    print("\nGantt Chart:", gantt)
+    print(tabulate(table_data, headers=headers, tablefmt="plain"))
+
+
+# Driver code
+if __name__ == "__main__":
+    process_list = [
+        [10, 0, 5, "P1"],  # [Priority, Arrival Time, Burst Time, Process ID]
+        [20, 1, 4, "P2"],
+        [30, 2, 2, "P3"],
+        [40, 4, 1, "P4"],
+    ]
+    priority_scheduling_preemptive(process_list, time_quantum=1)
