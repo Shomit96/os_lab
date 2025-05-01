@@ -1,0 +1,21 @@
+def lru_page_replacement(pages, frame_size):
+    frames = []
+    page_faults = 0
+
+    for page in pages:
+        if page not in frames:
+            page_faults += 1
+            if len(frames) == frame_size:
+                frames.pop(0)
+            frames.append(page)
+        else:
+            frames.remove(page)
+            frames.append(page)
+
+        print(f"Page: {page} -> Frames: {frames}")
+
+    print(f"\nTotal Page Faults: {page_faults}")
+
+pages = [7, 0, 1, 2, 0, 3, 0, 4, 2, 3]
+frame_size = 4
+lru_page_replacement(pages, frame_size)
